@@ -63,6 +63,7 @@ export const taxDeductionDefinitions: TaxDeductionDefinition[] = [
     id: 'S3a_EK',
     name: taxDeductionsPerson.pillar3a.label.de,
     rule: () => true,
+    applyAlways: true,
     input: (taxInput, _) =>
       taxInput.persons.map((person, index) => ({
         target: `P${index + 1}`,

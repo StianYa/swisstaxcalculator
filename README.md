@@ -70,7 +70,7 @@ The corresponding data can be retrieved by looking into the requests done by the
 
 1. tarifs.json: https://swisstaxcalculator.estv.admin.ch/#/taxdata/tax-scales (API_exportManyTaxScales)
 2. deductions.json: https://swisstaxcalculator.estv.admin.ch/#/taxdata/deductions (API_exportManyDeductions)
-3. tarifs.json: https://swisstaxcalculator.estv.admin.ch/#/taxdata/tax-rates (API_exportManySimpleRates)
+3. factors.json: https://swisstaxcalculator.estv.admin.ch/#/taxdata/tax-rates (API_exportManySimpleRates)
 
 <br>
 
