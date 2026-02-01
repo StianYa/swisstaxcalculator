@@ -21,6 +21,9 @@ import {
 import { getTaxTarifTable } from './provider';
 import { TaxTarif, TaxTarifGroup, TaxTarifGroupWithFallback, TaxTarifTableItem } from './types';
 import { TaxType } from '../types';
+// --- Расчёт по типу FORMEL (тариф-формула, кантон BL и др.) вынесен в отдельный модуль MyFormel.
+//     Импорт единственной внешней функции для FORMEL; остальная логика STC не меняется.
+import { MyCalculateTaxesByTypeFormel } from './MyFormel';
 import { TaxRelationship } from '../typesClient';
 
 export const taxTarifGroups = [
@@ -78,7 +81,10 @@ export const calculateTaxesAmount = (amount: Dinero<number>, tarif: TaxTarif) =>
       taxes = calculateTaxesByTypeFreiburg(amount, tarif);
       break;
     case 'FORMEL':
-      taxes = dineroChf(0); // TODO implement
+      // taxes = dineroChf(0); // TODO implement
+      // — прежняя заглушка, заменена вызовом MyFormel. Расчёт по формулам из данных (таблица formula, пороги amount).
+      // Используется для кантона BL (Basel-Landschaft) и др. Данные 2022–2025: formula с $wert$ и "log $wert$".
+      taxes = MyCalculateTaxesByTypeFormel(amount, tarif);
       break;
     default:
       throw new Error(`Unknown table type ${tarif.tableType}`);
