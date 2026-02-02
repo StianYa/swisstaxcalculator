@@ -18,6 +18,9 @@ import {
   CalculateTarifAndFlattaxTaxParams
 } from './types';
 import { calculateTaxesCantonAndCity } from '../factor';
+// Для подстановки церковного налога по ESTV 3.2 (MyChurch.ts):
+import { getTaxFactors } from '../factor/provider';
+import { MyCalculateChurchTax } from '../tarif/MyChurch';
 import { calculateTaxesForTarif, getTaxTarifGroup } from '../tarif';
 import { TaxInput, TaxResult } from '../typesClient';
 
@@ -38,8 +41,26 @@ export const calculatePensionCapitalTaxes = async (taxInput: TaxInput) => {
     definitionCanton,
     taxesBaseCanton
   );
-  const { taxesIncomeCanton, taxesIncomeCity, taxesIncomeChurch } =
+  // Церковное поле из factor не используем (_churchFromFactor): пересчитываем ниже через MyCalculateChurchTax.
+  const { taxesIncomeCanton, taxesIncomeCity, taxesIncomeChurch: _churchFromFactor } =
     await calculateTaxesCantonAndCity(taxInput, taxesBaseCanton, taxesBaseChurch, dineroChf(0));
+
+  // Подставляем церковный налог по доходу по ESTV 3.2 (MyChurch.ts). Базы — по пенсионному капиталу (имущество=0).
+  const factor = await getTaxFactors(taxInput);
+  const { taxesIncomeChurch, taxesFortuneChurch: _pensionFortuneChurch } = MyCalculateChurchTax(
+    taxInput,
+    {
+      taxesIncomeBase: taxesBaseCanton,
+      taxesIncomeCanton,
+      taxesIncomeCity,
+      taxesFortuneBase: dineroChf(0),
+      taxesFortuneCanton: dineroChf(0),
+      taxesFortuneCity: dineroChf(0),
+      taxableIncomeCanton: dineroChf(taxInput.fortune),
+      taxableFortuneCanton: dineroChf(0)
+    },
+    factor
+  );
 
   const taxesTotal = dineroAddMany(
     taxesBund,

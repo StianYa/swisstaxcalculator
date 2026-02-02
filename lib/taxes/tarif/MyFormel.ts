@@ -9,8 +9,9 @@ import { TaxTarif } from './types';
 
 /**
  * Вычисляет налог по тарифу FORMEL: выбор ступени по amount, подстановка $wert$ в формулу, вычисление.
- * Ступень: первая строка table с row.amount >= income; при отсутствии — последняя строка.
+ * Ступень: последняя строка table с row.amount <= income (эталон BL).
  * Пустая формула → 0. Иначе: замена "log $wert$" на "Math.log($wert$)", подстановка дохода, безопасное вычисление.
+ * Округление: результат формулы один раз округляется до 5 Rappen (0.05 CHF) здесь; дальнейшее округление до целых франков — в factor/index (dineroRound, halfEven).
  */
 export function MyCalculateTaxesByTypeFormel(
   amount: Dinero<number>,
@@ -28,12 +29,12 @@ export function MyCalculateTaxesByTypeFormel(
     return dineroChf(0);
   }
 
-  // Выбор ступени: первая строка, где row.amount >= income; иначе последняя строка.
-  let row = table[table.length - 1];
+  // Выбор ступени: последняя строка, где row.amount <= income (эталон BL: Birsfelden 90'026 → ступень 44'577 → 9'572 CHF).
+  // Ранее было «первая строка, где amount >= income» — давало ступень 111'442 и ~9'500 вместо 9'572.
+  let row = table[0];
   for (let i = 0; i < table.length; i++) {
-    if (table[i].amount >= income) {
+    if (table[i].amount <= income) {
       row = table[i];
-      break;
     }
   }
 
@@ -62,5 +63,10 @@ export function MyCalculateTaxesByTypeFormel(
     return dineroChf(0);
   }
 
-  return dineroChf(Math.round(result));
+  // Округление по правилу «5 Rappen» (0.05 CHF): до ближайших 5 сантимов; 0.025 округляется вверх.
+  // CH AL 5RAP / Swiss payroll and tax: round to nearest 0.05 CHF.
+  // Момент: один раз сразу после формулы, до возврата; факторы (100%, 62%) и округление до целых франков — в factor/index (dineroRound).
+  const rounded005 = Math.round(result / 0.05) * 0.05;
+  const rounded005Clean = Math.round(rounded005 * 100) / 100; // убрать артефакты float (9572.050000000001)
+  return dineroChf(rounded005Clean);
 }
