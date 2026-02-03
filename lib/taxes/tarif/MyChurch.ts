@@ -1,7 +1,7 @@
 /**
  * Расчёт церковного налога (Kirchensteuer) строго по плану церковный_налог_по_кантонам_estv.
  * База и особые правила по кантонам: UR (формула), BL (по конфессии), BS/TI/JU (кантон), VS (община),
- * NE (кантон + 10 CHF), GE (einfache + мин. 10 CHF).
+ * LU (12): база = einfache Kantonssteuer (Multiplikationsfaktor; taxesIncomeBase/taxesFortuneBase); NE (кантон + 10 CHF), GE (einfache + мин. 10 CHF).
  */
 import {
   DineroChf,
@@ -65,6 +65,8 @@ function getIncomeChurchBase(
       return bases.taxesIncomeCity;
     case 8: // GE — einfache Kantonssteuer + Minimalsteuer 10 CHF
       return bases.taxesIncomeBase;
+    case 12: // LU — Kirchensteuer als Vielfaches der einfachen Kantonssteuer (ESTV Ziff. 3.2)
+      return bases.taxesIncomeBase;
     default:
       return bases.taxesIncomeBase;
   }
@@ -94,6 +96,8 @@ function getFortuneChurchBase(
     case 24: // VS
       return bases.taxesFortuneCity;
     case 8: // GE
+      return bases.taxesFortuneBase;
+    case 12: // LU — Kirchensteuer als Vielfaches der einfachen Kantonssteuer (ESTV Ziff. 3.2)
       return bases.taxesFortuneBase;
     default:
       return bases.taxesFortuneBase;

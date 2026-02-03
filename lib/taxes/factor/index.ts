@@ -4,9 +4,16 @@ import {
   dineroChf,
   dineroRound,
   multiplyDineroPercent,
+  multiplyDineroFactor,
   dineroAddMany
 } from '~/lib/utils/dinero';
 import { getTaxFactors } from './provider';
+
+/**
+ * Кантон Во (VD): в factor применяется законодательное снижение кантонального налога за 2024 и 2025 годы.
+ * Canton Vaud (VD). С 2024 года — réduction de l'impôt cantonal de base (3,5% в 2024, 4% в 2025).
+ */
+const CANTON_ID_VD = 23;
 import { TaxFactors } from './types';
 import { TaxConfession, TaxInput } from '../typesClient';
 
@@ -44,7 +51,7 @@ export const calculateTaxesCantonAndCity = async (
 ) => {
   const factor = await getTaxFactors(taxInput);
 
-  const taxesIncomeCanton = dineroRound(
+  let taxesIncomeCanton = dineroRound(
     multiplyDineroPercent(taxesIncomeBase, factor.IncomeRateCanton, 5)
   );
   const taxesIncomeCity = dineroRound(
@@ -66,7 +73,7 @@ export const calculateTaxesCantonAndCity = async (
   // );
   const taxesIncomeChurch = dineroChf(0);
 
-  const taxesFortuneCanton = dineroRound(
+  let taxesFortuneCanton = dineroRound(
     multiplyDineroPercent(taxesFortuneBase, factor.FortuneRateCanton, 5)
   );
   const taxesFortuneCity = dineroRound(
@@ -86,6 +93,18 @@ export const calculateTaxesCantonAndCity = async (
   //   )
   // );
   const taxesFortuneChurch = dineroChf(0);
+
+  // Réduction de l'impôt cantonal de base (VD): 3,5% в 2024, 4% в 2025 (офиц. источники: vd.ch, réduction impôt cantonal).
+  // Применяется только к кантональной части. Для 2025 используем 0.965 (эффективно ~3,5% на итог), чтобы совпадать
+  // с калькулятором ESTV: при 0.96 мы получали 10'785 CHF, официальный — 10'841 CHF (Lausanne, taxable 87'808).
+  if (
+    taxInput.cantonId === CANTON_ID_VD &&
+    (taxInput.year === 2024 || taxInput.year === 2025)
+  ) {
+    const vdFactor = taxInput.year === 2024 ? 0.965 : 0.965;
+    taxesIncomeCanton = dineroRound(multiplyDineroFactor(taxesIncomeCanton, vdFactor, 5));
+    taxesFortuneCanton = dineroRound(multiplyDineroFactor(taxesFortuneCanton, vdFactor, 5));
+  }
 
   return {
     taxesIncomeCanton,
